@@ -41,7 +41,7 @@ class Snapshot:
         self.printer_uuid = None
         self.data = None
         self.timestamp = None
-        self.on_layer_change = False
+        self.on_layer_change = None
 
     def is_sendable(self) -> bool:
         """Is this snapshot complete and can it therefore be sent?"""
