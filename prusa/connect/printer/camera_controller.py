@@ -174,9 +174,12 @@ class CameraController:
         """Puts a snapshot received from the callback into a queue
         for sending and/or saving for a timelapse"""
         if snapshot.is_timelapse():
+            log.error("Enqueuing the shot to the TIMELAPSE queue")
             self.timelapse_queue.put(snapshot)
-        elif snapshot.is_sendable():
-            self.snapshot_queue.put(snapshot)
+        if not snapshot.is_sendable():
+            return
+        log.error("Enqueuing the shot to the CONNECT queue")
+        self.snapshot_queue.put(snapshot)
 
     def snapshot_loop(self) -> None:
         """Gets an item Snapshot from queue and sends it"""
