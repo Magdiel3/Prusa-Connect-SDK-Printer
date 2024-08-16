@@ -135,6 +135,18 @@ class CameraController:
             self.trigger_pile(TriggerScheme.FIFTH_LAYER)
             self._layer_trigger_counter = 0
 
+    def timestamp_shot_trigger(self, camera_idx: int = 0) -> None:
+        """ Triggers a photo on the first listed camera """
+        camera = list(self.cameras_in_order)[camera_idx]
+        if camera:
+            try:
+                timelapse_snap = Snapshot()
+                timelapse_snap.on_layer_change = True
+                camera.trigger_a_photo(snapshot=timelapse_snap)
+            except CameraBusy:
+                log.warning("Skipping timelapse shot from camera %s because it's busy",
+                            camera.name)
+
     def tick(self) -> None:
         """Called periodically by the SDK to let us trigger cameras when it's
         the right time"""
