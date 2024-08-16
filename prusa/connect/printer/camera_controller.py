@@ -142,6 +142,7 @@ class CameraController:
             try:
                 timelapse_snap = Snapshot()
                 timelapse_snap.on_layer_change = True
+                timelapse_snap.camera_id = camera.camera_id
                 camera.trigger_a_photo(snapshot=timelapse_snap)
             except CameraBusy:
                 log.warning("Skipping timelapse shot from camera %s because it's busy",
@@ -174,11 +175,9 @@ class CameraController:
         """Puts a snapshot received from the callback into a queue
         for sending and/or saving for a timelapse"""
         if snapshot.is_timelapse():
-            log.error("Enqueuing the shot to the TIMELAPSE queue")
             self.timelapse_queue.put(snapshot)
         if not snapshot.is_sendable():
             return
-        log.error("Enqueuing the shot to the CONNECT queue")
         self.snapshot_queue.put(snapshot)
 
     def snapshot_loop(self) -> None:

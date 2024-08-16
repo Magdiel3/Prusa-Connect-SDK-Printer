@@ -57,7 +57,6 @@ class Snapshot:
     def is_timelapse(self) -> bool:
         """Is this snapshot part of the layer change shots?"""
         required_attributes = [
-            self.camera_token,
             self.camera_id,
             self.timestamp,
             self.data,
