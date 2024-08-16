@@ -132,7 +132,7 @@ class Snapshot:
 
         return True
 
-    def _get_latest_file_number(save_directory: str, base_name: str) -> int:
+    def _get_latest_file_number(self, save_directory: str, base_name: str) -> int:
         """ Get latest file number from saved files in the directory """
         files = sorted(Path(save_directory).glob(f"{base_name}_*.jpg"))
 
