@@ -3,6 +3,8 @@ Snapshot and Resolution"""
 
 import logging
 from copy import deepcopy
+import os
+from pathlib import Path
 from threading import Event
 from time import time
 from typing import Any, Dict, Optional, Set
@@ -39,6 +41,7 @@ class Snapshot:
         self.printer_uuid = None
         self.data = None
         self.timestamp = None
+        self.on_layer_change = False
 
     def is_sendable(self) -> bool:
         """Is this snapshot complete and can it therefore be sent?"""
@@ -48,6 +51,17 @@ class Snapshot:
             self.camera_id,
             self.timestamp,
             self.data,
+        ]
+        return all(attribute is not None for attribute in required_attributes)
+
+    def is_timelapse(self) -> bool:
+        """Is this snapshot part of the layer change shots?"""
+        required_attributes = [
+            self.camera_token,
+            self.camera_id,
+            self.timestamp,
+            self.data,
+            self.on_layer_change,
         ]
         return all(attribute is not None for attribute in required_attributes)
 
@@ -77,6 +91,58 @@ class Snapshot:
         log.debug("%s response: %s", name, res.text)
         return res
 
+    def save(self, save_directory: str, file_base_name: str = None):
+        """A snapshot save function"""
+        name = self.__class__.__name__
+        log.debug("Saving %s: %s", name, self)
+
+        Path(save_directory).mkdir(parents=True, exist_ok=True)
+
+        if not file_base_name:
+            file_base_name = os.path.basename(save_directory)
+
+        if not self._check_directory_limits(save_directory):
+            log.error("Directory exceeds file or size limits.")
+            return
+
+        latest_file_number = self._get_latest_file_number(save_directory, file_base_name)
+
+        file_counter = latest_file_number + 1
+
+        file_path = os.path.join(save_directory, f"{file_base_name}_{file_counter:04d}.jpg")
+
+        with open(file_path, 'wb') as f:
+            f.write(self.data)
+
+    def _check_directory_limits(self, directory: str) -> bool:
+        """Check if the directory exceeds file or size limits"""
+        file_limit = 1200
+        size_limit_bytes = 250 * 1024 * 1024
+
+        file_count = 0
+        total_size = 0
+
+        for entry in Path(directory).iterdir():
+            if entry.is_file():
+                file_count += 1
+                total_size += entry.stat().st_size
+
+        if file_count > file_limit or total_size > size_limit_bytes:
+            return False
+
+        return True
+
+    def _get_latest_file_number(save_directory: str, base_name: str) -> int:
+        """ Get latest file number from saved files in the directory """
+        files = sorted(Path(save_directory).glob(f"{base_name}_*.jpg"))
+
+        if not files:
+            return 0
+
+        latest_file = files[-1]
+        latest_number = int(latest_file.stem.split('_')[-1])
+
+        return latest_number
 
 class Resolution:
     """A class to represent a camera resolution"""
