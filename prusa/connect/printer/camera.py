@@ -58,7 +58,7 @@ class Snapshot:
         """Is this snapshot part of the layer change shots?"""
         required_attributes = [
             self.camera_token,
-            self.camera_id,
+            # self.camera_id,
             self.timestamp,
             self.data,
             self.on_layer_change,
