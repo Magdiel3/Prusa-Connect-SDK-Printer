@@ -100,9 +100,6 @@ class Snapshot:
 
         if not file_base_name:
             file_base_name = os.path.basename(save_directory)
-            log.warning(f"Using default basename ({file_base_name})")
-        else:
-            log.warning(f"Basename was provided: {file_base_name}")
 
         if not self._check_directory_limits(save_directory):
             log.error("Directory exceeds file or size limits.")

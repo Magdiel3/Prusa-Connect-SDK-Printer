@@ -42,7 +42,7 @@ class CameraController:
         self.snapshot_queue: Queue[Snapshot] = Queue()
         self.timelapse_queue: Queue[Snapshot] = Queue()
 
-        self.timelapse_name = "no_name"
+        self.timelapse_name: str = "no_name"
 
         self._cameras: Dict[str, Camera] = {}
         self._camera_order: List[str] = []
@@ -109,12 +109,7 @@ class CameraController:
 
     def set_timelapse_name(self, name: str = "test_timelapse") -> None:
         """Define the current timelapse file base name"""
-        log.warning("Setting timelapse name to %s", name)
         self.timelapse_name = name
-
-    def get_timelapse_name(self) -> str:
-        """Define the current timelapse file base name"""
-        return self.timelapse_name
 
     def set_camera_order(self, camera_order: List[str]) -> None:
         """Usually called by the CameraConfigurator to order
@@ -154,7 +149,6 @@ class CameraController:
                 timelapse_snap = Snapshot()
                 timelapse_snap.on_layer_change = True
                 camera.trigger_a_photo(snapshot=timelapse_snap)
-                log.warning("Triggering a timelapse photo for %s", self.timelapse_name)
             except CameraBusy:
                 log.warning("Skipping timelapse shot from camera %s because it's busy",
                             camera.name)
@@ -186,14 +180,8 @@ class CameraController:
         """Puts a snapshot received from the callback into a queue
         for sending and/or saving for a timelapse"""
         if snapshot.is_timelapse():
+            log.error("Enqueuing the shot to the TIMELAPSE queue")
             self.timelapse_queue.put(snapshot)
-            log.warning("Enqueuing the shot to the TIMELAPSE queue (name = %s)", self.timelapse_name)
-        else:
-            log.warning("camera_token -> %d", snapshot.camera_token is None)
-            log.warning("camera_id -> %d", snapshot.camera_id is None)
-            log.warning("timestamp -> %d", snapshot.timestamp is None)
-            log.warning("data -> %d", snapshot.data is None)
-            log.warning("on_layer_change -> %d", snapshot.on_layer_change is None)
         if not snapshot.is_sendable():
             return
         log.error("Enqueuing the shot to the CONNECT queue")
@@ -230,10 +218,6 @@ class CameraController:
             try:
                 # Get the item to send
                 item = self.timelapse_queue.get(timeout=TIMESTAMP_PRECISION)
-
-                if item:
-                    log.warning("Saving snap into %s with the name of %s.",
-                        os.path.join(Path.home(), 'prusa/timelapses'), self.timelapse_name)
 
                 # Save it
                 # TODO: Find a way to get the file_base_name from the print filename.
