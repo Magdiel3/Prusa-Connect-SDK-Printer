@@ -1,6 +1,8 @@
 """Implementation of CameraController"""
 import logging
 from functools import partial
+import os
+from pathlib import Path
 from queue import Empty, Queue
 from time import time
 from typing import Callable, Dict, Iterator, List, Optional, Set
@@ -38,6 +40,7 @@ class CameraController:
         self.server = server
         # pylint: disable=unsubscriptable-object
         self.snapshot_queue: Queue[Snapshot] = Queue()
+        self.timelapse_queue: Queue[Snapshot] = Queue()
 
         self._cameras: Dict[str, Camera] = {}
         self._camera_order: List[str] = []
@@ -132,6 +135,19 @@ class CameraController:
             self.trigger_pile(TriggerScheme.FIFTH_LAYER)
             self._layer_trigger_counter = 0
 
+    def timestamp_shot_trigger(self, camera_idx: int = 0) -> None:
+        """ Triggers a photo on the first listed camera """
+        camera = list(self.cameras_in_order)[camera_idx]
+        if camera:
+            try:
+                timelapse_snap = Snapshot()
+                timelapse_snap.on_layer_change = True
+                timelapse_snap.camera_id = camera.camera_id
+                camera.trigger_a_photo(snapshot=timelapse_snap)
+            except CameraBusy:
+                log.warning("Skipping timelapse shot from camera %s because it's busy",
+                            camera.name)
+
     def tick(self) -> None:
         """Called periodically by the SDK to let us trigger cameras when it's
         the right time"""
@@ -157,7 +173,9 @@ class CameraController:
 
     def photo_handler(self, snapshot: Snapshot) -> None:
         """Puts a snapshot received from the callback into a queue
-        for sending"""
+        for sending and/or saving for a timelapse"""
+        if snapshot.is_timelapse():
+            self.timelapse_queue.put(snapshot)
         if not snapshot.is_sendable():
             return
         self.snapshot_queue.put(snapshot)
@@ -185,6 +203,25 @@ class CameraController:
             except Exception:  # pylint: disable=broad-except
                 log.exception(
                     "Unexpected exception caught in SDK snapshot loop!")
+
+    def timelapse_shot_loop(self) -> None:
+        """Gets an item Snapshot from the timelapse queue and saves it"""
+        self._running = True
+        while self._running:
+            try:
+                # Get the item to send
+                item = self.timelapse_queue.get(timeout=TIMESTAMP_PRECISION)
+
+                # Save it
+                # TODO: Find a way to get the file_base_name from the print filename.
+                #       Maybe using print_stats.get_stats() in Prusa-Link and send it
+                #       somehow to this scope.
+                item.save(os.path.join(Path.home(), "prusa/timelapses"), "test_timelapse")
+            except Empty:
+                continue
+            except Exception:  # pylint: disable=broad-except
+                log.exception(
+                    "Unexpected exception caught in SDK timelapse shots loop!")
 
     def stop(self) -> None:
         """Signals to the loop to stop"""
