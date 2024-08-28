@@ -58,6 +58,7 @@ class Snapshot:
         """Is this snapshot part of the layer change shots?"""
         required_attributes = [
             self.camera_token,
+            # TODO: M3D-7: Identify why this is not available during saving
             # self.camera_id,
             self.timestamp,
             self.data,
@@ -102,7 +103,7 @@ class Snapshot:
             file_base_name = os.path.basename(save_directory)
 
         if not self._check_directory_limits(save_directory):
-            log.error("Directory exceeds file or size limits.")
+            log.error("Directory exceeds file or size limits. (Dir -> %s)", save_directory)
             return
 
         latest_file_number = self._get_latest_file_number(save_directory, file_base_name)
@@ -117,7 +118,7 @@ class Snapshot:
     def _check_directory_limits(self, directory: str) -> bool:
         """Check if the directory exceeds file or size limits"""
         file_limit = 1200
-        size_limit_bytes = 250 * 1024 * 1024
+        size_limit_bytes = 450 * 1024 * 1024
 
         file_count = 0
         total_size = 0

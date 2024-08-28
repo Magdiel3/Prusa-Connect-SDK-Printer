@@ -220,10 +220,7 @@ class CameraController:
                 item = self.timelapse_queue.get(timeout=TIMESTAMP_PRECISION)
 
                 # Save it
-                # TODO: Find a way to get the file_base_name from the print filename.
-                #       Maybe using print_stats.get_stats() in Prusa-Link and send it
-                #       somehow to this scope.
-                item.save(os.path.join(Path.home(), "prusa/timelapses"), self.timelapse_name)
+                item.save(os.path.join(Path.home(), "prusa/timelapses", self.timelapse_name))
             except Empty:
                 continue
             except Exception:  # pylint: disable=broad-except
