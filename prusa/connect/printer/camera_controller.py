@@ -42,6 +42,8 @@ class CameraController:
         self.snapshot_queue: Queue[Snapshot] = Queue()
         self.timelapse_queue: Queue[Snapshot] = Queue()
 
+        self.timelapse_name: str = "no_name"
+
         self._cameras: Dict[str, Camera] = {}
         self._camera_order: List[str] = []
         self._trigger_piles: Dict[TriggerScheme, Set[Camera]] = {
@@ -104,6 +106,10 @@ class CameraController:
         for camera_id in self._camera_order:
             if camera_id in self._cameras:
                 yield self._cameras[camera_id]
+
+    def set_timelapse_name(self, name: str = "test_timelapse") -> None:
+        """Define the current timelapse file base name"""
+        self.timelapse_name = name
 
     def set_camera_order(self, camera_order: List[str]) -> None:
         """Usually called by the CameraConfigurator to order
@@ -217,7 +223,7 @@ class CameraController:
                 # TODO: Find a way to get the file_base_name from the print filename.
                 #       Maybe using print_stats.get_stats() in Prusa-Link and send it
                 #       somehow to this scope.
-                item.save(os.path.join(Path.home(), "prusa/timelapses"), "test_timelapse")
+                item.save(os.path.join(Path.home(), "prusa/timelapses"), self.timelapse_name)
             except Empty:
                 continue
             except Exception:  # pylint: disable=broad-except
